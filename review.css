@@ -1,0 +1,39 @@
+:root {
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: light dark;
+}
+
+body { margin: 0; }
+header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: center;
+  padding: 16px 22px;
+  background: Canvas;
+  border-bottom: 1px solid #8884;
+}
+h1 { margin: 0; font-size: 21px; }
+p { margin: 5px 0 0; color: #777; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+button {
+  padding: 8px 13px;
+  border: 1px solid #8885;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+button.primary { background: #1d9bf0; color: white; border-color: #1d9bf0; font-weight: 700; }
+.notice { padding: 9px 22px; background: #ffcc0030; font-size: 13px; }
+main { padding: 0 22px 30px; }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 10px 8px; border-bottom: 1px solid #8883; text-align: left; font-size: 13px; }
+th { position: sticky; top: 87px; background: Canvas; }
+.thumb { width: 96px; height: 70px; object-fit: cover; border-radius: 7px; background: #8882; }
+.url { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ok { color: #16a34a; }
+.error { color: #dc2626; }

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>媒体下载预览</title>
+    <link rel="stylesheet" href="review.css">
+  </head>
+  <body>
+    <header>
+      <div>
+        <h1>媒体下载预览</h1>
+        <p id="summary">正在读取扫描结果……</p>
+      </div>
+      <div class="actions">
+        <button id="selectAll">全选</button>
+        <button id="selectNone">全不选</button>
+        <button id="exportCsv">导出 CSV</button>
+        <button id="exportJson">导出 JSON</button>
+        <button id="download" class="primary">下载选中项</button>
+      </div>
+    </header>
+    <div id="helper" class="notice"></div>
+    <main>
+      <table>
+        <thead>
+          <tr>
+            <th><input id="toggleAll" type="checkbox" checked></th>
+            <th>预览</th>
+            <th>日期</th>
+            <th>类型</th>
+            <th>码率</th>
+            <th>推文</th>
+            <th>状态</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </main>
+    <script src="review.js"></script>
+  </body>
+</html>

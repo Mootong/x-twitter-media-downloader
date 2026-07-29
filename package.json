@@ -1,0 +1,16 @@
+{
+  "name": "x-twitter-media-downloader",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Chrome extension for previewing and downloading media posted by an X/Twitter user in a date range.",
+  "scripts": {
+    "validate": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/validate.ps1",
+    "package": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/package.ps1",
+    "release:patch": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/bump-version.ps1 patch",
+    "release:minor": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/bump-version.ps1 minor",
+    "release:major": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/bump-version.ps1 major"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

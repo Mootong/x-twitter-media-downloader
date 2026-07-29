@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>X 媒体下载器</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <main>
+      <h1>X 媒体下载器</h1>
+      <label>
+        用户名
+        <input id="handle" placeholder="@username" autocomplete="off">
+      </label>
+      <div class="dates">
+        <label>
+          开始日期
+          <input id="startDate" type="date">
+        </label>
+        <label>
+          结束日期
+          <input id="endDate" type="date">
+        </label>
+      </div>
+      <label>
+        最大推文数
+        <input id="maxTweets" type="number" min="1" max="1000" value="100">
+      </label>
+      <label class="check">
+        <input id="includeRetweets" type="checkbox">
+        包含转推
+      </label>
+      <label class="check">
+        <input id="previewOnly" type="checkbox" checked>
+        扫描后预览并勾选
+      </label>
+      <button id="start">开始扫描并下载</button>
+      <button id="stop" class="secondary">停止</button>
+      <button id="review" class="secondary">打开上次预览</button>
+      <p id="status">请先登录 X，并打开任意 x.com 页面。</p>
+      <pre id="stats"></pre>
+    </main>
+    <script src="popup.js"></script>
+  </body>
+</html>
