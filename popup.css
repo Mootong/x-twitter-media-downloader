@@ -24,7 +24,8 @@ label {
   font-size: 13px;
 }
 
-input {
+input,
+select {
   box-sizing: border-box;
   width: 100%;
   padding: 8px;
@@ -67,8 +68,26 @@ button.secondary {
   margin-top: 8px;
 }
 
-#status {
+.intro {
+  margin: 0 0 16px;
   font-size: 12px;
+  line-height: 1.45;
+}
+
+#status {
+  margin: 12px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+#status:empty {
+  display: none;
+}
+
+.notice {
+  margin: 12px 0 0;
+  color: #777;
+  font-size: 11px;
   line-height: 1.45;
 }
 

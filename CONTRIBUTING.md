@@ -13,8 +13,9 @@
 2. 创建功能分支。
 3. 修改代码，同时更新相关文档和变更记录。
 4. 执行 `npm run validate`。
-5. 在 Chrome 中重新加载扩展并完成手工验证。
-6. 执行 `npm run package` 生成发布包。
+5. 执行 `npm test`。
+6. 在 Chrome 中重新加载扩展并完成手工验证。
+7. 执行 `npm run package` 生成发布包。
 
 ## 完成标准
 

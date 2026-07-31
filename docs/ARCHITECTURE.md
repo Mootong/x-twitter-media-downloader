@@ -9,7 +9,7 @@ X 页面
   │    捕获 fetch/XHR GraphQL JSON
   │
   └─ content.js（isolated world）
-       扫描推文 DOM、按 tweetId 合并视频 variants
+       扫描推文 DOM、按 tweetId 合并完整媒体列表和视频 variants
                 │
                 ▼
 background.js（Service Worker）
@@ -24,7 +24,7 @@ review.html / review.js
 
 ## 数据流
 
-1. `popup.js` 生成 X 搜索条件并启动扫描。
+1. `popup.js` 打开目标用户的 `/media` 页面并启动扫描。
 2. `interceptor.js` 在主世界读取 GraphQL 响应，通过受来源检查的
    `window.postMessage` 发送视频 variants。
 3. `content.js` 从 DOM 得到推文 ID、日期和图片，将 variants 按推文 ID 合并。

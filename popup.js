@@ -1,4 +1,6 @@
 const $ = (id) => document.getElementById(id);
+const { t, localizeDocument } = window.xmdI18n;
+localizeDocument();
 
 async function activeTab() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -14,9 +16,7 @@ async function saveForm() {
     handle: $("handle").value,
     startDate: $("startDate").value,
     endDate: $("endDate").value,
-    maxTweets: $("maxTweets").value,
-    includeRetweets: $("includeRetweets").checked,
-    previewOnly: $("previewOnly").checked
+    maxTweets: $("maxTweets").value
   };
   await chrome.storage.local.set(data);
   return data;
@@ -24,14 +24,13 @@ async function saveForm() {
 
 async function restoreForm() {
   const data = await chrome.storage.local.get([
-    "handle", "startDate", "endDate", "maxTweets", "includeRetweets", "previewOnly", "lastProgress"
+    "handle", "handleHistory", "startDate", "endDate", "maxTweets", "lastProgress"
   ]);
   $("handle").value = data.handle || "";
+  renderHandleHistory(data.handleHistory || []);
   $("startDate").value = data.startDate || "";
   $("endDate").value = data.endDate || "";
   $("maxTweets").value = data.maxTweets || 100;
-  $("includeRetweets").checked = Boolean(data.includeRetweets);
-  $("previewOnly").checked = data.previewOnly !== false;
   if (data.lastProgress) {
     setStatus(data.lastProgress.message);
     $("stats").textContent = JSON.stringify(data.lastProgress.stats || {}, null, 2);
@@ -43,57 +42,53 @@ $("start").addEventListener("click", async () => {
     const data = await saveForm();
     const handle = data.handle.trim().replace(/^@/, "");
     if (!/^[A-Za-z0-9_]{1,15}$/.test(handle)) {
-      setStatus("请输入有效的 X 用户名。");
+      setStatus(t("invalidUsername"));
       return;
     }
     if (data.startDate && data.endDate && data.startDate > data.endDate) {
-      setStatus("开始日期不能晚于结束日期。");
+      setStatus(t("invalidDateRange"));
       return;
     }
 
     const tab = await activeTab();
     if (!tab?.id || !/^https:\/\/(x|twitter)\.com\//.test(tab.url || "")) {
-      setStatus("请先打开并登录 x.com。");
+      setStatus(t("loginPrompt"));
       return;
     }
 
-    setStatus("正在打开搜索页……");
-    const query = [
-      `from:${handle}`,
-      data.startDate ? `since:${data.startDate}` : "",
-      // X 的 until 为排他边界；内容脚本仍会按实际时间再次过滤。
-      data.endDate ? `until:${nextDay(data.endDate)}` : "",
-      data.includeRetweets ? "" : "-filter:retweets",
-      "filter:media"
-    ].filter(Boolean).join(" ");
-    const url = `https://x.com/search?q=${encodeURIComponent(query)}&src=typed_query&f=live`;
-    await chrome.tabs.update(tab.id, { url });
-    await waitForTab(tab.id);
-    await chrome.tabs.sendMessage(tab.id, {
-      type: "START_SCAN",
+    setStatus(t("openingMediaPage"));
+    const url = `https://x.com/${encodeURIComponent(handle)}/media`;
+    const result = await chrome.runtime.sendMessage({
+      type: "NAVIGATE_AND_START_SCAN",
+      tabId: tab.id,
+      url,
       options: {
         handle,
         startDate: data.startDate,
         endDate: data.endDate,
-        maxTweets: Math.min(1000, Math.max(1, Number(data.maxTweets) || 100)),
-        includeRetweets: data.includeRetweets,
-        previewOnly: data.previewOnly
+        maxTweets: Math.min(1000, Math.max(1, Number(data.maxTweets) || 100))
       }
     });
-    setStatus("扫描已开始。关闭弹窗不会中断。");
+    if (!result?.ok) throw new Error(result?.error || t("scanCouldNotStart"));
+    setStatus(t("scanQueued"));
   } catch (error) {
-    setStatus(`启动失败：${error.message}`);
+    setStatus(t("startupFailed", error.message));
   }
 });
 
 $("stop").addEventListener("click", async () => {
   const tab = await activeTab();
   if (tab?.id) await chrome.tabs.sendMessage(tab.id, { type: "STOP_SCAN" }).catch(() => {});
-  setStatus("已请求停止。");
+  setStatus(t("stopRequested"));
 });
 
 $("review").addEventListener("click", () => {
   chrome.tabs.create({ url: chrome.runtime.getURL("review.html") });
+});
+
+$("handleHistory").addEventListener("change", (event) => {
+  if (event.target.value) $("handle").value = event.target.value;
+  event.target.selectedIndex = 0;
 });
 
 chrome.runtime.onMessage.addListener((message) => {
@@ -102,27 +97,20 @@ chrome.runtime.onMessage.addListener((message) => {
   $("stats").textContent = JSON.stringify(message.stats || {}, null, 2);
 });
 
-function nextDay(dateText) {
-  const date = new Date(`${dateText}T00:00:00Z`);
-  date.setUTCDate(date.getUTCDate() + 1);
-  return date.toISOString().slice(0, 10);
-}
-
-function waitForTab(tabId) {
-  return new Promise((resolve) => {
-    const timeout = setTimeout(() => {
-      chrome.tabs.onUpdated.removeListener(listener);
-      resolve();
-    }, 15000);
-    function listener(id, info) {
-      if (id === tabId && info.status === "complete") {
-        clearTimeout(timeout);
-        chrome.tabs.onUpdated.removeListener(listener);
-        resolve();
-      }
-    }
-    chrome.tabs.onUpdated.addListener(listener);
-  });
+function renderHandleHistory(history) {
+  const select = $("handleHistory");
+  select.replaceChildren();
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = t("historyPlaceholder");
+  select.appendChild(placeholder);
+  for (const handle of history) {
+    const option = document.createElement("option");
+    option.value = handle;
+    option.textContent = `@${handle}`;
+    select.appendChild(option);
+  }
+  $("handleHistoryLabel").hidden = history.length === 0;
 }
 
 restoreForm();

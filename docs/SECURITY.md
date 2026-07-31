@@ -2,12 +2,10 @@
 
 ## 权限
 
-- `activeTab`、`tabs`：定位并导航当前 X 标签页。
 - `downloads`：保存图片和完整 MP4。
 - `storage`：保存设置、扫描结果和进度。
 - `x.com`、`twitter.com`：扫描用户有权访问的推文。
-- `pbs.twimg.com`、`video.twimg.com`：下载媒体。
-- `127.0.0.1:17863`：向本地 HLS/DASH 辅助服务提交任务。
+- 可选 `127.0.0.1:17863`：仅在用户下载 HLS/DASH 时向本地辅助服务提交任务。
 
 ## 本地辅助服务
 

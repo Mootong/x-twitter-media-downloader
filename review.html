@@ -1,23 +1,28 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>媒体下载预览</title>
+    <title data-i18n="reviewTitle">Media download preview</title>
     <link rel="stylesheet" href="review.css">
   </head>
   <body>
     <header>
       <div>
-        <h1>媒体下载预览</h1>
-        <p id="summary">正在读取扫描结果……</p>
+        <h1 data-i18n="reviewTitle">Media download preview</h1>
+        <p id="summary" data-i18n="loadingResults">Loading scan results…</p>
       </div>
       <div class="actions">
-        <button id="selectAll">全选</button>
-        <button id="selectNone">全不选</button>
-        <button id="exportCsv">导出 CSV</button>
-        <button id="exportJson">导出 JSON</button>
-        <button id="download" class="primary">下载选中项</button>
+        <button id="selectAll" data-i18n="selectAll">Select all</button>
+        <button id="selectNone" data-i18n="selectNone">Select none</button>
+        <details class="export-menu">
+          <summary data-i18n="exportReport">Export scan list</summary>
+          <div class="export-options">
+            <button id="exportCsv" data-i18n="exportCsv">Export CSV</button>
+            <button id="exportJson" data-i18n="exportJson">Export JSON</button>
+          </div>
+        </details>
+        <button id="download" class="primary" data-i18n="downloadSelected">Download selected</button>
       </div>
     </header>
     <div id="helper" class="notice"></div>
@@ -26,17 +31,18 @@
         <thead>
           <tr>
             <th><input id="toggleAll" type="checkbox" checked></th>
-            <th>预览</th>
-            <th>日期</th>
-            <th>类型</th>
-            <th>码率</th>
-            <th>推文</th>
-            <th>状态</th>
+            <th data-i18n="previewColumn">Preview</th>
+            <th data-i18n="dateColumn">Date</th>
+            <th data-i18n="typeColumn">Type</th>
+            <th data-i18n="bitrateColumn">Bitrate</th>
+            <th data-i18n="postColumn">Post</th>
+            <th data-i18n="statusColumn">Status</th>
           </tr>
         </thead>
         <tbody id="rows"></tbody>
       </table>
     </main>
+    <script src="i18n.js"></script>
     <script src="review.js"></script>
   </body>
 </html>

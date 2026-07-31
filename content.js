@@ -1,17 +1,31 @@
+const t = window.xmdI18n.t;
 let stopRequested = false;
 let running = false;
 const capturedVideoVariants = new Map();
+const capturedImages = new Map();
 
 window.addEventListener("message", (event) => {
   if (event.source !== window || event.origin !== location.origin) return;
-  if (event.data?.source !== "x-media-downloader-main" || event.data.type !== "VIDEO_VARIANTS") return;
-  for (const video of event.data.videos || []) {
-    if (!video.tweetId || !Array.isArray(video.variants)) continue;
-    const existing = capturedVideoVariants.get(video.tweetId) || [];
-    const merged = [...existing, ...video.variants];
-    capturedVideoVariants.set(video.tweetId, uniqueBy(merged, (item) => item.url));
+  if (event.data?.source !== "x-media-downloader-main" || event.data.type !== "CAPTURED_MEDIA") return;
+  for (const media of event.data.media || []) {
+    if (!media.tweetId) continue;
+    if (media.type === "image" && media.url) {
+      const existing = capturedImages.get(media.tweetId) || [];
+      capturedImages.set(
+        media.tweetId,
+        uniqueBy([...existing, originalImageUrl(media.url)], imageIdentity)
+      );
+    }
+    if (Array.isArray(media.variants)) {
+      const existing = capturedVideoVariants.get(media.tweetId) || [];
+      capturedVideoVariants.set(
+        media.tweetId,
+        uniqueBy([...existing, ...media.variants], (item) => item.url)
+      );
+    }
   }
 });
+requestCapturedMedia();
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "STOP_SCAN") {
@@ -21,11 +35,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
   if (message.type === "START_SCAN") {
     if (running) {
-      sendResponse({ ok: false, error: "扫描已在运行" });
+      sendResponse({ ok: false, error: t("scanAlreadyRunning") });
       return;
     }
     runScan(message.options).catch((error) => {
-      report(`扫描失败：${error.message}`, { error: error.message });
+      report(t("scanFailed", error.message), { error: error.message });
     });
     sendResponse({ ok: true });
   }
@@ -41,38 +55,42 @@ async function runScan(options) {
     tweets: 0,
     images: 0,
     videos: 0,
-    skippedVideos: 0,
-    downloadErrors: 0
+    skippedVideos: 0
   };
   let stagnantRounds = 0;
 
-  report("等待搜索结果加载……", stats);
+  report(t("loadingMedia"), stats);
+  requestCapturedMedia();
   await sleep(2200);
 
   while (!stopRequested && stats.tweets < options.maxTweets && stagnantRounds < 8) {
     const articles = [...document.querySelectorAll('article[data-testid="tweet"]')];
+    const visibleTweets = [
+      ...articles.map((article) => parseTweet(article, options)),
+      ...parseMediaGrid(options)
+    ];
     let newTweets = 0;
 
-    for (const article of articles) {
+    for (const tweet of visibleTweets) {
       if (stopRequested || stats.tweets >= options.maxTweets) break;
-      const tweet = parseTweet(article, options);
       if (!tweet || seenTweets.has(tweet.id)) continue;
       seenTweets.add(tweet.id);
       newTweets++;
 
-      if (!tweet.inRange || (!options.includeRetweets && tweet.isRetweet)) continue;
+      if (!tweet.inRange) continue;
       stats.tweets++;
 
-      const mediaList = enrichVideoMedia(tweet);
-      for (const media of mediaList) {
-        if (!media.url || seenUrls.has(media.url)) continue;
-        seenUrls.add(media.url);
-        const filename = makeFilename(options.handle, tweet, media);
+      const mediaList = enrichMedia(tweet);
+      for (const [mediaIndex, media] of mediaList.entries()) {
+        const mediaKey = mediaIdentity(media);
+        if (!media.url || seenUrls.has(mediaKey)) continue;
+        seenUrls.add(mediaKey);
+        const filename = makeFilename(options.handle, tweet, media, mediaIndex);
         const item = {
           id: `${tweet.id}-${items.length + 1}`,
           selected: true,
           tweetId: tweet.id,
-          tweetUrl: `https://x.com/${options.handle}/status/${tweet.id}`,
+          tweetUrl: `https://x.com/${tweet.author}/status/${tweet.id}`,
           handle: options.handle,
           date: tweet.date,
           kind: media.kind || media.type,
@@ -84,15 +102,10 @@ async function runScan(options) {
         if (media.type === "image") stats.images++;
         else stats.videos++;
 
-        if (!options.previewOnly) {
-          const result = await chrome.runtime.sendMessage({ type: "DOWNLOAD_ITEM", item });
-          if (!result?.ok) stats.downloadErrors++;
-          await sleep(120);
-        }
       }
 
       stats.skippedVideos += tweet.skippedVideos && !capturedVideoVariants.has(tweet.id) ? tweet.skippedVideos : 0;
-      report(`已扫描 ${stats.tweets}/${options.maxTweets} 条推文`, stats);
+      report(t("scannedProgress", [stats.tweets, options.maxTweets]), stats);
     }
 
     stagnantRounds = newTweets === 0 ? stagnantRounds + 1 : 0;
@@ -101,41 +114,53 @@ async function runScan(options) {
   }
 
   const reason = stopRequested
-    ? "扫描已停止。"
+    ? t("scanStopped")
     : stagnantRounds >= 8
-      ? "已到达当前搜索结果末尾。"
-      : "已达到最大推文数。";
+      ? t("endReached")
+      : t("maxReached");
   await chrome.runtime.sendMessage({
     type: "SAVE_RESULTS",
     items,
     meta: { options, stats, finishedAt: new Date().toISOString() },
-    openReview: options.previewOnly && items.length > 0
+    openReview: items.length > 0
   });
-  report(`${reason} 发现图片 ${stats.images}，视频 ${stats.videos}。${options.previewOnly ? " 已打开预览页。" : ""}`, stats);
+  report(
+    `${reason} ${t("foundMedia", [stats.images, stats.videos])}${items.length > 0 ? t("reviewOpened") : ""}`,
+    stats
+  );
   running = false;
 }
 
 function parseTweet(article, options) {
-  const time = article.querySelector("time");
-  const link = time?.closest('a[href*="/status/"]');
+  const statusLinks = [...article.querySelectorAll('time')]
+    .map((time) => time.closest('a[href*="/status/"]'))
+    .filter(Boolean);
+  // The first timestamp belongs to the outer tweet. Later timestamps may be
+  // quoted tweets and must never be promoted to the scan result.
+  const link = statusLinks[0];
   const href = link?.getAttribute("href") || "";
-  const id = href.match(/\/status\/(\d+)/)?.[1];
-  const isoTime = time?.getAttribute("datetime");
-  if (!id || !isoTime) return null;
+  const permalink = parseStatusPermalink(href);
+  const isoTime = link?.querySelector("time")?.getAttribute("datetime");
+  if (!permalink || !isoTime) return null;
+  const { author, id } = permalink;
 
   const date = isoTime.slice(0, 10);
   const inRange =
     (!options.startDate || date >= options.startDate) &&
     (!options.endDate || date <= options.endDate);
-  const isRetweet = /reposted|转推了|已转推/i.test(article.innerText.slice(0, 250));
+  if (author.toLowerCase() !== options.handle.toLowerCase()) {
+    return null;
+  }
   const media = [];
 
   for (const img of article.querySelectorAll('img[src*="pbs.twimg.com/media/"]')) {
+    if (!belongsToTweet(img, id)) continue;
     media.push({ type: "image", url: originalImageUrl(img.src) });
   }
 
   let skippedVideos = 0;
   for (const video of article.querySelectorAll("video")) {
+    if (!belongsToTweet(video, id)) continue;
     const url = video.currentSrc || video.src;
     if (/^https:\/\/video\.twimg\.com\/.+\.mp4(?:\?|$)/i.test(url)) {
       media.push({ type: "video", kind: "mp4", url });
@@ -144,11 +169,90 @@ function parseTweet(article, options) {
     }
   }
 
-  return { id, date, isoTime, media, skippedVideos, inRange, isRetweet };
+  return { id, author, date, isoTime, media, skippedVideos, inRange };
 }
 
-function enrichVideoMedia(tweet) {
-  const images = tweet.media.filter((media) => media.type === "image");
+function parseMediaGrid(options) {
+  const tweets = new Map();
+  const mediaSelector = [
+    'img[src*="pbs.twimg.com/media/"]',
+    'img[src*="pbs.twimg.com/ext_tw_video_thumb/"]',
+    'img[src*="pbs.twimg.com/amplify_video_thumb/"]',
+    'img[src*="pbs.twimg.com/tweet_video_thumb/"]',
+    "video"
+  ].join(",");
+
+  for (const link of document.querySelectorAll('a[href*="/status/"]')) {
+    if (!link.querySelector(mediaSelector)) continue;
+    const permalink = parseStatusPermalink(link.getAttribute("href") || "");
+    if (!permalink || permalink.author.toLowerCase() !== options.handle.toLowerCase()) continue;
+
+    let tweet = tweets.get(permalink.id);
+    if (!tweet) {
+      const isoTime = isoTimeFromTweetId(permalink.id);
+      if (!isoTime) continue;
+      const date = isoTime.slice(0, 10);
+      tweet = {
+        ...permalink,
+        date,
+        isoTime,
+        media: [],
+        skippedVideos: 0,
+        inRange:
+          (!options.startDate || date >= options.startDate) &&
+          (!options.endDate || date <= options.endDate)
+      };
+      tweets.set(permalink.id, tweet);
+    }
+
+    for (const img of link.querySelectorAll('img[src*="pbs.twimg.com/media/"]')) {
+      const url = originalImageUrl(img.src);
+      if (!tweet.media.some((item) => item.url === url)) {
+        tweet.media.push({ type: "image", url });
+      }
+    }
+    for (const video of link.querySelectorAll("video")) {
+      const url = video.currentSrc || video.src;
+      if (/^https:\/\/video\.twimg\.com\/.+\.mp4(?:\?|$)/i.test(url) &&
+          !tweet.media.some((item) => item.url === url)) {
+        tweet.media.push({ type: "video", kind: "mp4", url });
+      } else if (url) {
+        tweet.skippedVideos++;
+      }
+    }
+  }
+  return [...tweets.values()];
+}
+
+function parseStatusPermalink(href) {
+  const match = href.match(/^(?:https?:\/\/(?:x|twitter)\.com)?\/([^/?#]+)\/status\/(\d+)/i);
+  if (!match || /^(?:i|home|explore|search|notifications|messages)$/i.test(match[1])) {
+    return null;
+  }
+  return { author: match[1], id: match[2] };
+}
+
+function isoTimeFromTweetId(tweetId) {
+  try {
+    const twitterEpoch = 1288834974657n;
+    return new Date(Number((BigInt(tweetId) >> 22n) + twitterEpoch)).toISOString();
+  } catch (_) {
+    return "";
+  }
+}
+
+function belongsToTweet(element, tweetId) {
+  const enclosingLink = element.closest('a[href*="/status/"]');
+  if (!enclosingLink) return true;
+  const permalink = parseStatusPermalink(enclosingLink.getAttribute("href") || "");
+  return !permalink || permalink.id === tweetId;
+}
+
+function enrichMedia(tweet) {
+  const images = uniqueBy([
+    ...tweet.media.filter((media) => media.type === "image"),
+    ...(capturedImages.get(tweet.id) || []).map((url) => ({ type: "image", url }))
+  ], mediaIdentity);
   const domVideos = tweet.media.filter((media) => media.type === "video");
   const variants = capturedVideoVariants.get(tweet.id) || [];
   if (!variants.length) return [...images, ...domVideos];
@@ -193,12 +297,26 @@ function extensionFromPath(path) {
   return path.match(/\.(jpe?g|png|webp|gif)$/i)?.[1]?.replace("jpeg", "jpg");
 }
 
-function makeFilename(handle, tweet, media) {
-  const index = tweet.media.indexOf(media) + 1;
+function imageIdentity(value) {
+  try {
+    const url = new URL(value);
+    const mediaId = url.pathname.split("/").pop().replace(/\.(?:jpe?g|png|webp|gif)$/i, "");
+    return `${url.hostname.toLowerCase()}:${mediaId}`;
+  } catch (_) {
+    return String(value);
+  }
+}
+
+function mediaIdentity(media) {
+  return media.type === "image" ? `image:${imageIdentity(media.url)}` : `${media.kind || media.type}:${media.url}`;
+}
+
+function makeFilename(handle, tweet, media, mediaIndex) {
+  const index = mediaIndex + 1;
   const ext = media.type === "image"
     ? new URL(media.url).searchParams.get("format") || "jpg"
     : media.kind === "hls" ? "m3u8" : media.kind === "dash" ? "mpd" : "mp4";
-  return `X-Media/${sanitize(handle)}/${tweet.date}_${tweet.id}_${index}.${sanitize(ext)}`;
+  return `${sanitize(handle)}/${tweet.date}_${tweet.id}_${index}.${sanitize(ext)}`;
 }
 
 function uniqueBy(items, keyFn) {
@@ -212,6 +330,13 @@ function sanitize(value) {
 function report(message, stats) {
   const payload = { type: "SCAN_PROGRESS", message, stats: { ...stats } };
   chrome.runtime.sendMessage(payload).catch(() => {});
+}
+
+function requestCapturedMedia() {
+  window.postMessage({
+    source: "x-media-downloader-content",
+    type: "REQUEST_CAPTURED_MEDIA"
+  }, location.origin);
 }
 
 function sleep(ms) {

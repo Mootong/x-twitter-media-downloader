@@ -1,22 +1,25 @@
 (() => {
   if (window.__xMediaInterceptorInstalled) return;
   window.__xMediaInterceptorInstalled = true;
+  const capturedMedia = new Map();
 
   const publish = (value) => {
     try {
-      const videos = [];
-      walk(value, videos, new WeakSet());
-      if (videos.length) {
-        window.postMessage({
-          source: "x-media-downloader-main",
-          type: "VIDEO_VARIANTS",
-          videos
-        }, location.origin);
-      }
+      const media = [];
+      walk(value, media, new WeakSet());
+      remember(media);
+      postMedia([...capturedMedia.values()]);
     } catch (_) {
       // Never interfere with X if its response format changes.
     }
   };
+
+  window.addEventListener("message", (event) => {
+    if (event.source !== window || event.origin !== location.origin) return;
+    if (event.data?.source !== "x-media-downloader-content" ||
+        event.data.type !== "REQUEST_CAPTURED_MEDIA") return;
+    postMedia([...capturedMedia.values()]);
+  });
 
   const originalFetch = window.fetch;
   window.fetch = async function (...args) {
@@ -54,11 +57,12 @@
     const mediaList = legacy.extended_entities?.media || legacy.entities?.media || [];
     for (const media of mediaList) {
       const variants = media?.video_info?.variants;
-      if (!Array.isArray(variants) || !variants.length) continue;
       output.push({
         tweetId: id,
         mediaKey: media.media_key || media.id_str || "",
-        variants: variants.map((variant) => ({
+        type: media.type === "photo" ? "image" : "video",
+        url: media.media_url_https || media.media_url || "",
+        variants: (Array.isArray(variants) ? variants : []).map((variant) => ({
           url: variant.url,
           bitrate: Number(variant.bitrate || 0),
           contentType: variant.content_type || ""
@@ -67,5 +71,22 @@
     }
 
     for (const value of Object.values(node)) walk(value, output, seen);
+  }
+
+  function remember(mediaItems) {
+    for (const media of mediaItems) {
+      if (!media.tweetId || (!media.url && !media.variants.length)) continue;
+      const key = `${media.tweetId}:${media.mediaKey || media.url || media.variants[0]?.url}`;
+      capturedMedia.set(key, media);
+    }
+  }
+
+  function postMedia(media) {
+    if (!media.length) return;
+    window.postMessage({
+      source: "x-media-downloader-main",
+      type: "CAPTURED_MEDIA",
+      media
+    }, location.origin);
   }
 })();

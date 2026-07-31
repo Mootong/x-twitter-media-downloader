@@ -1,19 +1,32 @@
 {
   "manifest_version": 3,
-  "name": "X/Twitter Media Downloader",
-  "version": "0.2.0",
-  "description": "Download images and videos posted by a specified X/Twitter user in a date range.",
-  "permissions": ["activeTab", "downloads", "storage", "tabs"],
+  "name": "__MSG_extensionName__",
+  "version": "1.0.0",
+  "description": "__MSG_extensionDescription__",
+  "default_locale": "en",
+  "minimum_chrome_version": "111",
+  "permissions": ["downloads", "storage"],
   "host_permissions": [
     "https://x.com/*",
-    "https://twitter.com/*",
-    "https://pbs.twimg.com/*",
-    "https://video.twimg.com/*",
+    "https://twitter.com/*"
+  ],
+  "optional_host_permissions": [
     "http://127.0.0.1:17863/*"
   ],
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
   "action": {
-    "default_title": "X Media Downloader",
-    "default_popup": "popup.html"
+    "default_title": "__MSG_extensionName__",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png"
+    }
   },
   "background": {
     "service_worker": "background.js"
@@ -27,14 +40,8 @@
     },
     {
       "matches": ["https://x.com/*", "https://twitter.com/*"],
-      "js": ["content.js"],
+      "js": ["i18n.js", "content.js"],
       "run_at": "document_idle"
-    }
-  ],
-  "web_accessible_resources": [
-    {
-      "resources": ["review.html", "review.css", "review.js"],
-      "matches": ["https://x.com/*", "https://twitter.com/*"]
     }
   ]
 }

@@ -23,12 +23,14 @@ $releaseFiles = @(
     "review.html",
     "review.css",
     "review.js",
-    "README.md",
-    "helper"
+    "i18n.js",
+    "icons",
+    "_locales"
 )
 foreach ($file in $releaseFiles) {
     Copy-Item -LiteralPath (Join-Path $projectRoot $file) -Destination $stage -Recurse -Force
 }
+Remove-Item -LiteralPath (Join-Path $stage "icons/icon.svg") -Force -ErrorAction SilentlyContinue
 
 if (Test-Path -LiteralPath $zip) {
     Remove-Item -LiteralPath $zip -Force

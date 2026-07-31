@@ -1,46 +1,47 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>X 媒体下载器</title>
+    <title data-i18n="extensionName">Media Downloader for X</title>
     <link rel="stylesheet" href="popup.css">
   </head>
   <body>
     <main>
-      <h1>X 媒体下载器</h1>
+      <h1 data-i18n="extensionName">Media Downloader for X</h1>
+      <p class="intro" data-i18n="introDescription">This extension downloads media files from a specified X user. Sign in to X, open any x.com page, then enter the target X username below.</p>
       <label>
-        用户名
+        <span data-i18n="usernameLabel">Username</span>
         <input id="handle" placeholder="@username" autocomplete="off">
+      </label>
+      <label id="handleHistoryLabel" hidden>
+        <span data-i18n="historyLabel">Recent usernames</span>
+        <select id="handleHistory">
+          <option value="" data-i18n="historyPlaceholder">Choose a recent username</option>
+        </select>
       </label>
       <div class="dates">
         <label>
-          开始日期
+          <span data-i18n="startDateLabel">Start date</span>
           <input id="startDate" type="date">
         </label>
         <label>
-          结束日期
+          <span data-i18n="endDateLabel">End date</span>
           <input id="endDate" type="date">
         </label>
       </div>
       <label>
-        最大推文数
+        <span data-i18n="maxPostsLabel">Maximum posts</span>
         <input id="maxTweets" type="number" min="1" max="1000" value="100">
       </label>
-      <label class="check">
-        <input id="includeRetweets" type="checkbox">
-        包含转推
-      </label>
-      <label class="check">
-        <input id="previewOnly" type="checkbox" checked>
-        扫描后预览并勾选
-      </label>
-      <button id="start">开始扫描并下载</button>
-      <button id="stop" class="secondary">停止</button>
-      <button id="review" class="secondary">打开上次预览</button>
-      <p id="status">请先登录 X，并打开任意 x.com 页面。</p>
+      <button id="start" data-i18n="startScan">Start scan</button>
+      <button id="stop" class="secondary" data-i18n="stop">Stop</button>
+      <button id="review" class="secondary" data-i18n="openLastPreview">Open last preview</button>
+      <p class="notice" data-i18n="copyrightNotice">Only download media you own or are authorized to save. Not affiliated with X Corp.</p>
+      <p id="status" aria-live="polite"></p>
       <pre id="stats"></pre>
     </main>
+    <script src="i18n.js"></script>
     <script src="popup.js"></script>
   </body>
 </html>
