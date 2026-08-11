@@ -1,0 +1,38 @@
+Media Downloader for X is an unofficial Chrome extension that helps you scan, review, and download visible images and videos from a specific X account. It is designed for saving media you own or have permission to download.
+
+HOW IT WORKS
+
+1. Sign in to X and open a user page.
+2. Open the extension from Chrome's persistent side panel. The username is detected automatically and can be edited if needed.
+3. Choose an optional date range and maximum number of posts, then start the scan.
+4. Review every discovered media item on a separate preview page.
+5. Select the images and videos you want and download them to a folder named after the X username.
+
+KEY FEATURES
+
+- Persistent Chrome side panel that stays available while the target page opens.
+- Automatic username detection from X user, media, and post pages.
+- Recent username history for quick repeat scans.
+- Optional start date, end date, and maximum post count controls.
+- Detect multiple images and multiple videos attached to the same post.
+- Highest-bitrate available MP4 selected separately for each video.
+- Preview totals for all media, images, and videos.
+- Filter preview results by image or video.
+- View original image dimensions and video bitrate in the media information column.
+- Select all, select none, or choose individual items before downloading.
+- Save downloads under Downloads/<username>/ with organized filenames.
+- Track the real completion state of each selected download and receive a final completion summary.
+- Export the scan list as UTF-8 CSV or JSON.
+- English, Simplified Chinese, Japanese, Korean, and Spanish interface support.
+
+PRIVACY
+
+Scanning and standard image/MP4 downloads are processed locally in your browser. Settings, recent usernames, scan progress, and preview results are stored locally using Chrome extension storage. No scan data is uploaded to a developer server. The extension contains no ads, tracking, or analytics.
+
+OPTIONAL HLS/DASH SUPPORT
+
+Some videos are only available as HLS or DASH streams. Combining those streams is an optional advanced feature that requires the open-source localhost helper with FFmpeg and a separate localhost permission prompt. Images, standard MP4 videos, and scanning do not require this helper.
+
+IMPORTANT
+
+The extension only processes media visible to your signed-in X session and does not bypass login, privacy settings, access controls, or deleted content. Only download content you own or are authorized to save, and follow applicable laws and the source platform's terms.

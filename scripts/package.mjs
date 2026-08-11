@@ -20,6 +20,7 @@ const releaseFiles = [
   "review.css",
   "review.js",
   "i18n.js",
+  "url_handle.js",
   "icons",
   "_locales"
 ];

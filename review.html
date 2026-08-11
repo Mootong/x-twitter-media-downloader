@@ -13,6 +13,14 @@
         <p id="summary" data-i18n="loadingResults">Loading scan results…</p>
       </div>
       <div class="actions">
+        <label class="type-filter">
+          <span data-i18n="mediaTypeFilterLabel">Media type</span>
+          <select id="typeFilter">
+            <option value="all" data-i18n="filterAllMedia">All media</option>
+            <option value="image" data-i18n="filterImages">Images</option>
+            <option value="video" data-i18n="filterVideos">Videos</option>
+          </select>
+        </label>
         <button id="selectAll" data-i18n="selectAll">Select all</button>
         <button id="selectNone" data-i18n="selectNone">Select none</button>
         <details class="export-menu">
@@ -26,6 +34,19 @@
       </div>
     </header>
     <div id="helper" class="notice"></div>
+    <div id="downloadSummary" class="download-summary" role="status" aria-live="polite" hidden></div>
+    <dialog id="downloadCompleteDialog" class="completion-dialog">
+      <form method="dialog">
+        <div class="completion-icon" aria-hidden="true">✓</div>
+        <h2 data-i18n="downloadCompleteTitle">Downloads complete</h2>
+        <p id="downloadCompleteMessage"></p>
+        <p class="rating-prompt" data-i18n="ratePrompt">If you are satisfied with the extension, please consider rating it in the Chrome Web Store.</p>
+        <div class="dialog-actions">
+          <a id="rateExtension" class="dialog-button primary" target="_blank" rel="noopener noreferrer" data-i18n="rateInStore">Rate in Chrome Web Store</a>
+          <button value="cancel" data-i18n="maybeLater">Maybe later</button>
+        </div>
+      </form>
+    </dialog>
     <main>
       <table>
         <thead>
@@ -34,7 +55,7 @@
             <th data-i18n="previewColumn">Preview</th>
             <th data-i18n="dateColumn">Date</th>
             <th data-i18n="typeColumn">Type</th>
-            <th data-i18n="bitrateColumn">Bitrate</th>
+            <th data-i18n="mediaInfoColumn">Media info</th>
             <th data-i18n="postColumn">Post</th>
             <th data-i18n="statusColumn">Status</th>
           </tr>

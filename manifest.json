@@ -1,11 +1,11 @@
 {
   "manifest_version": 3,
   "name": "__MSG_extensionName__",
-  "version": "1.0.0",
+  "version": "1.1.5",
   "description": "__MSG_extensionDescription__",
   "default_locale": "en",
-  "minimum_chrome_version": "111",
-  "permissions": ["downloads", "storage"],
+  "minimum_chrome_version": "116",
+  "permissions": ["downloads", "storage", "sidePanel"],
   "host_permissions": [
     "https://x.com/*",
     "https://twitter.com/*"
@@ -21,12 +21,14 @@
   },
   "action": {
     "default_title": "__MSG_extensionName__",
-    "default_popup": "popup.html",
     "default_icon": {
       "16": "icons/icon16.png",
       "32": "icons/icon32.png",
       "48": "icons/icon48.png"
     }
+  },
+  "side_panel": {
+    "default_path": "popup.html"
   },
   "background": {
     "service_worker": "background.js"

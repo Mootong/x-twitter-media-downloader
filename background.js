@@ -2,6 +2,15 @@ const pendingDownloadFilenames = new Map();
 const PENDING_SCAN_KEY = "pendingScan";
 const startingScanTabs = new Set();
 
+configureSidePanel();
+
+function configureSidePanel() {
+  if (!chrome.sidePanel?.setPanelBehavior) return;
+  chrome.sidePanel
+    .setPanelBehavior({ openPanelOnActionClick: true })
+    .catch((error) => console.warn("Could not configure the side panel:", error));
+}
+
 chrome.downloads.onDeterminingFilename.addListener((downloadItem, suggest) => {
   const filename = takePendingFilename(downloadItem.url) ||
     takePendingFilename(downloadItem.finalUrl);
@@ -127,13 +136,15 @@ async function saveScanStartupError(error) {
     lastProgress: {
       type: "SCAN_PROGRESS",
       message,
-      stats: { error: error.message }
+      stats: { error: error.message },
+      phase: "failed"
     }
   });
   chrome.runtime.sendMessage({
     type: "SCAN_PROGRESS",
     message,
-    stats: { error: error.message }
+    stats: { error: error.message },
+    phase: "failed"
   }).catch(() => {});
 }
 

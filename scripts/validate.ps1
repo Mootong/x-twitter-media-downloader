@@ -12,6 +12,18 @@ if (-not $manifest.version) {
 if (-not $manifest.icons."128") {
     throw "manifest.json is missing a 128px icon"
 }
+if ([int]$manifest.minimum_chrome_version -lt 116) {
+    throw "side panel requires Chrome 116 or later"
+}
+if ($manifest.permissions -notcontains "sidePanel") {
+    throw "sidePanel permission is missing"
+}
+if ($manifest.side_panel.default_path -ne "popup.html") {
+    throw "side panel entry is missing"
+}
+if ($manifest.action.default_popup) {
+    throw "toolbar action must not open the old popup"
+}
 
 $node = Get-Command node -ErrorAction SilentlyContinue
 if (-not $node) {
@@ -23,6 +35,7 @@ $javascriptFiles = @(
     "content.js",
     "i18n.js",
     "interceptor.js",
+    "url_handle.js",
     "popup.js",
     "review.js"
 )

@@ -62,6 +62,8 @@
         mediaKey: media.media_key || media.id_str || "",
         type: media.type === "photo" ? "image" : "video",
         url: media.media_url_https || media.media_url || "",
+        width: Number(media.original_info?.width || 0),
+        height: Number(media.original_info?.height || 0),
         variants: (Array.isArray(variants) ? variants : []).map((variant) => ({
           url: variant.url,
           bitrate: Number(variant.bitrate || 0),
