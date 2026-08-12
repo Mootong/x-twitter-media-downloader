@@ -65,4 +65,4 @@ release notes before changed data handling begins.
 Questions or privacy requests may be submitted through the project's public
 issue tracker:
 
-https://github.com/Mootong/x-twitter-media-downloader/issues
+https://github.com/mootong404/x-twitter-media-downloader/issues
