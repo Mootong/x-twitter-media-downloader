@@ -6,9 +6,9 @@
 - 默认语言：英语
 - 支持语言：英语、简体中文、日语、韩语、西班牙语
 - 分类：工具
-- 首页：https://github.com/Mootong/x-twitter-media-downloader
-- 支持：https://github.com/Mootong/x-twitter-media-downloader/issues
-- 隐私政策：https://github.com/Mootong/x-twitter-media-downloader/blob/main/PRIVACY.md
+- 首页：https://github.com/mootong404/x-twitter-media-downloader
+- 支持：https://github.com/mootong404/x-twitter-media-downloader/issues
+- 隐私政策：https://github.com/mootong404/x-twitter-media-downloader/blob/main/PRIVACY.md
 
 ## 简短说明
 
