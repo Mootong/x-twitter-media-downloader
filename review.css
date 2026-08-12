@@ -19,6 +19,19 @@ header {
 h1 { margin: 0; font-size: 21px; }
 p { margin: 5px 0 0; color: #777; }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.type-filter {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+}
+.type-filter select {
+  padding: 7px 28px 7px 10px;
+  border: 1px solid #8885;
+  border-radius: 999px;
+  background: Canvas;
+  color: inherit;
+}
 button {
   padding: 8px 13px;
   border: 1px solid #8885;
@@ -28,6 +41,7 @@ button {
   cursor: pointer;
 }
 button.primary { background: #1d9bf0; color: white; border-color: #1d9bf0; font-weight: 700; }
+button:disabled { opacity: 0.55; cursor: wait; }
 .export-menu { position: relative; }
 .export-menu summary {
   padding: 8px 13px;
@@ -59,6 +73,64 @@ button.primary { background: #1d9bf0; color: white; border-color: #1d9bf0; font-
 }
 .export-options button { width: 100%; }
 .notice { padding: 9px 22px; background: #ffcc0030; font-size: 13px; }
+.download-summary {
+  padding: 10px 22px;
+  border-bottom: 1px solid #8884;
+  background: #1d9bf018;
+  font-size: 13px;
+  font-weight: 600;
+}
+.download-summary.ok { color: #15803d; background: #22c55e18; }
+.download-summary.error { color: #b91c1c; background: #ef444418; }
+.completion-dialog {
+  width: min(420px, calc(100vw - 40px));
+  box-sizing: border-box;
+  padding: 0;
+  border: 1px solid #8885;
+  border-radius: 18px;
+  background: Canvas;
+  color: CanvasText;
+  box-shadow: 0 20px 60px #0006;
+}
+.completion-dialog::backdrop { background: #0008; }
+.completion-dialog form { padding: 24px; text-align: center; }
+.completion-dialog h2 { margin: 10px 0 0; font-size: 21px; }
+.completion-dialog p { margin-top: 9px; line-height: 1.5; }
+.completion-icon {
+  display: grid;
+  width: 52px;
+  height: 52px;
+  margin: 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: #22c55e20;
+  color: #16a34a;
+  font-size: 28px;
+  font-weight: 800;
+}
+.rating-prompt { font-size: 13px; }
+.dialog-actions {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 18px;
+  flex-wrap: wrap;
+}
+.dialog-button {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 13px;
+  border: 1px solid #8885;
+  border-radius: 999px;
+  color: inherit;
+  text-decoration: none;
+}
+.dialog-button.primary {
+  border-color: #1d9bf0;
+  background: #1d9bf0;
+  color: white;
+  font-weight: 700;
+}
 main { padding: 0 22px 30px; }
 table { width: 100%; border-collapse: collapse; }
 th, td { padding: 10px 8px; border-bottom: 1px solid #8883; text-align: left; font-size: 13px; }

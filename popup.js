@@ -1,5 +1,6 @@
 const $ = (id) => document.getElementById(id);
 const { t, localizeDocument } = window.xmdI18n;
+const { detectHandleFromUrl } = window.xmdUrlHandle;
 localizeDocument();
 
 async function activeTab() {
@@ -9,6 +10,50 @@ async function activeTab() {
 
 function setStatus(text) {
   $("status").textContent = text;
+}
+
+function renderStats(stats = {}) {
+  const container = $("stats");
+  const values = {
+    tweets: Math.max(0, Number(stats.tweets) || 0),
+    images: Math.max(0, Number(stats.images) || 0),
+    videos: Math.max(0, Number(stats.videos) || 0),
+    skippedVideos: Math.max(0, Number(stats.skippedVideos) || 0)
+  };
+
+  container.replaceChildren();
+  container.hidden = values.tweets + values.images + values.videos + values.skippedVideos === 0;
+  if (container.hidden) return;
+
+  const title = document.createElement("p");
+  title.className = "stats-title";
+  title.textContent = t("scanSummaryLabel");
+  container.appendChild(title);
+
+  const grid = document.createElement("div");
+  grid.className = "stats-grid";
+  for (const [value, labelKey] of [
+    [values.tweets, "scannedPostsLabel"],
+    [values.images, "foundImagesLabel"],
+    [values.videos, "foundVideosLabel"]
+  ]) {
+    const item = document.createElement("div");
+    item.className = "stat-item";
+    const number = document.createElement("strong");
+    number.textContent = String(value);
+    const label = document.createElement("span");
+    label.textContent = t(labelKey);
+    item.append(number, label);
+    grid.appendChild(item);
+  }
+  container.appendChild(grid);
+
+  if (values.skippedVideos > 0) {
+    const note = document.createElement("p");
+    note.className = "stats-note";
+    note.textContent = t("skippedVideosSummary", values.skippedVideos);
+    container.appendChild(note);
+  }
 }
 
 async function saveForm() {
@@ -23,21 +68,32 @@ async function saveForm() {
 }
 
 async function restoreForm() {
-  const data = await chrome.storage.local.get([
-    "handle", "handleHistory", "startDate", "endDate", "maxTweets", "lastProgress"
+  const [data, tab] = await Promise.all([
+    chrome.storage.local.get([
+      "handle", "handleHistory", "startDate", "endDate", "maxTweets", "lastProgress"
+    ]),
+    activeTab()
   ]);
-  $("handle").value = data.handle || "";
+  const detectedHandle = detectHandleFromUrl(tab?.url || "");
+  $("handle").value = detectedHandle || data.handle || "";
   renderHandleHistory(data.handleHistory || []);
   $("startDate").value = data.startDate || "";
   $("endDate").value = data.endDate || "";
   $("maxTweets").value = data.maxTweets || 100;
-  if (data.lastProgress) {
+  if (data.lastProgress?.phase === "running") {
     setStatus(data.lastProgress.message);
-    $("stats").textContent = JSON.stringify(data.lastProgress.stats || {}, null, 2);
+    renderStats(data.lastProgress.stats);
   }
 }
 
+async function autoFillHandleFromActiveTab() {
+  const tab = await activeTab();
+  const detectedHandle = detectHandleFromUrl(tab?.url || "");
+  if (detectedHandle) $("handle").value = detectedHandle;
+}
+
 $("start").addEventListener("click", async () => {
+  renderStats();
   try {
     const data = await saveForm();
     const handle = data.handle.trim().replace(/^@/, "");
@@ -94,7 +150,17 @@ $("handleHistory").addEventListener("change", (event) => {
 chrome.runtime.onMessage.addListener((message) => {
   if (message.type !== "SCAN_PROGRESS") return;
   setStatus(message.message);
-  $("stats").textContent = JSON.stringify(message.stats || {}, null, 2);
+  renderStats(message.stats);
+});
+
+chrome.tabs.onActivated.addListener(() => {
+  autoFillHandleFromActiveTab().catch(() => {});
+});
+
+chrome.tabs.onUpdated.addListener((_tabId, changeInfo, tab) => {
+  if (tab.active && (changeInfo.url || changeInfo.status === "complete")) {
+    autoFillHandleFromActiveTab().catch(() => {});
+  }
 });
 
 function renderHandleHistory(history) {

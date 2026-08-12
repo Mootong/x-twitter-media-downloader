@@ -12,6 +12,10 @@ X 页面
        扫描推文 DOM、按 tweetId 合并完整媒体列表和视频 variants
                 │
                 ▼
+popup.html / popup.js（Chrome Side Panel）
+  自动识别当前 X 页面用户名、配置并启动扫描
+                │
+                ▼
 background.js（Service Worker）
   ├─ Chrome Downloads：图片、完整 MP4
   ├─ chrome.storage：扫描结果和状态
@@ -24,7 +28,7 @@ review.html / review.js
 
 ## 数据流
 
-1. `popup.js` 打开目标用户的 `/media` 页面并启动扫描。
+1. Chrome Side Panel 中的 `popup.js` 从当前 X 地址自动识别用户名，打开目标用户的 `/media` 页面并启动扫描。
 2. `interceptor.js` 在主世界读取 GraphQL 响应，通过受来源检查的
    `window.postMessage` 发送视频 variants。
 3. `content.js` 从 DOM 得到推文 ID、日期和图片，将 variants 按推文 ID 合并。

@@ -1,7 +1,7 @@
 const t = window.xmdI18n.t;
 let stopRequested = false;
 let running = false;
-const capturedVideoVariants = new Map();
+const capturedVideos = new Map();
 const capturedImages = new Map();
 
 window.addEventListener("message", (event) => {
@@ -13,15 +13,29 @@ window.addEventListener("message", (event) => {
       const existing = capturedImages.get(media.tweetId) || [];
       capturedImages.set(
         media.tweetId,
-        uniqueBy([...existing, originalImageUrl(media.url)], imageIdentity)
+        uniqueBy([...existing, {
+          type: "image",
+          url: originalImageUrl(media.url),
+          width: Number(media.width || 0),
+          height: Number(media.height || 0)
+        }], (item) => imageIdentity(item.url))
       );
     }
-    if (Array.isArray(media.variants)) {
-      const existing = capturedVideoVariants.get(media.tweetId) || [];
-      capturedVideoVariants.set(
-        media.tweetId,
-        uniqueBy([...existing, ...media.variants], (item) => item.url)
-      );
+    if (media.type === "video" && Array.isArray(media.variants) && media.variants.length > 0) {
+      const existing = capturedVideos.get(media.tweetId) || [];
+      const mediaKey = media.mediaKey || media.url || media.variants[0]?.url || "";
+      const previous = existing.find((item) => item.mediaKey === mediaKey);
+      const captured = {
+        mediaKey,
+        variants: uniqueBy([
+          ...(previous?.variants || []),
+          ...media.variants
+        ], (item) => item.url)
+      };
+      capturedVideos.set(media.tweetId, [
+        ...existing.filter((item) => item.mediaKey !== mediaKey),
+        captured
+      ]);
     }
   }
 });
@@ -39,7 +53,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       return;
     }
     runScan(message.options).catch((error) => {
-      report(t("scanFailed", error.message), { error: error.message });
+      running = false;
+      report(t("scanFailed", error.message), { error: error.message }, "failed");
     });
     sendResponse({ ok: true });
   }
@@ -95,6 +110,8 @@ async function runScan(options) {
           date: tweet.date,
           kind: media.kind || media.type,
           bitrate: media.bitrate || 0,
+          width: media.type === "image" ? Number(media.width || 0) : 0,
+          height: media.type === "image" ? Number(media.height || 0) : 0,
           url: media.url,
           filename
         };
@@ -104,7 +121,7 @@ async function runScan(options) {
 
       }
 
-      stats.skippedVideos += tweet.skippedVideos && !capturedVideoVariants.has(tweet.id) ? tweet.skippedVideos : 0;
+      stats.skippedVideos += tweet.skippedVideos && !capturedVideos.has(tweet.id) ? tweet.skippedVideos : 0;
       report(t("scannedProgress", [stats.tweets, options.maxTweets]), stats);
     }
 
@@ -125,8 +142,9 @@ async function runScan(options) {
     openReview: items.length > 0
   });
   report(
-    `${reason} ${t("foundMedia", [stats.images, stats.videos])}${items.length > 0 ? t("reviewOpened") : ""}`,
-    stats
+    `${reason}${items.length > 0 ? t("reviewOpened") : ""}`,
+    stats,
+    "completed"
   );
   running = false;
 }
@@ -251,22 +269,26 @@ function belongsToTweet(element, tweetId) {
 function enrichMedia(tweet) {
   const images = uniqueBy([
     ...tweet.media.filter((media) => media.type === "image"),
-    ...(capturedImages.get(tweet.id) || []).map((url) => ({ type: "image", url }))
+    ...(capturedImages.get(tweet.id) || [])
   ], mediaIdentity);
   const domVideos = tweet.media.filter((media) => media.type === "video");
-  const variants = capturedVideoVariants.get(tweet.id) || [];
-  if (!variants.length) return [...images, ...domVideos];
+  const videos = (capturedVideos.get(tweet.id) || [])
+    .map((media) => bestVideoSource(media.variants))
+    .filter(Boolean);
+  return [...images, ...(videos.length > 0 ? videos : domVideos)];
+}
 
+function bestVideoSource(variants) {
   const bestMp4 = variants
     .filter((variant) => /video\/mp4/i.test(variant.contentType) || /\.mp4(?:\?|$)/i.test(variant.url))
     .sort((a, b) => b.bitrate - a.bitrate)[0];
   if (bestMp4) {
-    return [...images, {
+    return {
       type: "video",
       kind: "mp4",
       url: bestMp4.url,
       bitrate: bestMp4.bitrate
-    }];
+    };
   }
 
   const manifest = variants.find((variant) =>
@@ -275,13 +297,13 @@ function enrichMedia(tweet) {
     /dash|mpd/i.test(`${variant.contentType} ${variant.url}`)
   );
   if (manifest) {
-    return [...images, {
+    return {
       type: "video",
       kind: /mpd|dash/i.test(`${manifest.contentType} ${manifest.url}`) ? "dash" : "hls",
       url: manifest.url
-    }];
+    };
   }
-  return [...images, ...domVideos];
+  return null;
 }
 
 function originalImageUrl(value) {
@@ -327,8 +349,8 @@ function sanitize(value) {
   return String(value).replace(/[<>:"/\\|?*\x00-\x1F]/g, "_");
 }
 
-function report(message, stats) {
-  const payload = { type: "SCAN_PROGRESS", message, stats: { ...stats } };
+function report(message, stats, phase = "running") {
+  const payload = { type: "SCAN_PROGRESS", message, stats: { ...stats }, phase };
   chrome.runtime.sendMessage(payload).catch(() => {});
 }
 

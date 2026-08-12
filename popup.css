@@ -4,11 +4,13 @@
 }
 
 body {
-  width: 340px;
+  min-width: 280px;
+  min-height: 100vh;
   margin: 0;
 }
 
 main {
+  box-sizing: border-box;
   padding: 16px;
 }
 
@@ -91,9 +93,56 @@ button.secondary {
   line-height: 1.45;
 }
 
-#stats {
-  white-space: pre-wrap;
+.stats {
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid #8884;
+  border-radius: 10px;
+  background: #8881;
+}
+
+.stats-title {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.stat-item {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  text-align: center;
+}
+
+.stat-item strong {
+  font-size: 17px;
+  line-height: 1.2;
+}
+
+.stat-item span {
+  color: #777;
+  font-size: 10px;
+  line-height: 1.25;
+}
+
+.stats-note {
+  margin: 8px 0 0;
+  padding-top: 8px;
+  border-top: 1px solid #8884;
+  color: #b45309;
   font-size: 11px;
-  max-height: 100px;
-  overflow: auto;
+  line-height: 1.4;
+}
+
+@media (max-width: 320px) {
+  .dates {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
 }
